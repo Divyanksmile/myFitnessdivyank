@@ -1,0 +1,1032 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { Box, Button, Modal } from '@mui/material'
+import "../assets/css/header.css"
+import '../assets/css/style.css'
+import CalendarComponentTwo from './CalendeTwo';
+import { Link, useNavigate } from 'react-router-dom';
+import Login from '../Component/Auth/Login'
+import OtpVerification from "../Component/Auth/OtpVerification";
+import UserDetails from "../Component/Auth/UserDetails";
+import Commitment from "../Component/Auth/Commitment";
+import Welcome from "../Component/Auth/Welcome";
+import { useOutsideClick } from '../Services/GlobalHooks';
+import AddPhoto from './Auth/AddPhoto';
+import Intrest from '../Screen/Intrest';
+import About from './Auth/About';
+const style = {
+  position: 'absolute',
+  top: '50%',
+  left: '50%',
+  transform: 'translate(-50%, -50%)',
+  width: '560px',
+  maxHeight: '85%',
+  bgcolor: 'background.paper',
+  boxShadow: 24,
+  borderRadius: 2,
+  p: 0,
+  '&:focus': {
+    outline: 'none',
+  },
+  overflowY: 'hidden',
+  '@media (max-width: 600px)': {
+    width: '100%',
+    height: '100%',
+    top: '0',
+    left: '0',
+    transform: 'none',
+    borderRadius: 0,
+  },
+};
+const SiteHeader = (props) => {
+  const navigate = useNavigate()
+  const [isMenuActive, setMenuActive] = useState(false);
+  const [isSubMenuActive, setSubMenuActive] = useState(false);
+  const [isBigSearch, setBigSearch] = useState(false);
+  const [isScrolled, setScrolled] = useState(false);
+  const [adjustC, setAd] = useState(true)
+  const handleToggleMenu = () => {
+    setMenuActive(!isMenuActive);
+  };
+  const handleLoginShow = () => {
+    setSubMenuActive(!isSubMenuActive);
+  };
+  useEffect(() => {
+    const handleScroll = () => {
+      setScrolled(window.scrollY > 50);
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+  const [activeTab, setActiveTab] = useState('show-srch-first');
+  const handleTabClick = (tabId) => {
+    setActiveTab(tabId);
+  }
+  const [activeTab1, setActiveTab1] = useState('one-map');
+  //   const [activeTab1, setActiveTab1] = useState('one-map');
+  //   useEffect(() => {
+  //     const handleOutsideClick = (event) => {
+  //       // Check if the clicked element is outside any tab
+  //       const isOutsideTabs = ![...document.querySelectorAll('.locetion-box, .calendar, .time-box, .addgust-box')].some(tab =>
+  //         tab.contains(event.target)
+  //       );
+  //       // If outside, hide the active tab
+  //       if (isOutsideTabs && activeTab1 !== null) {
+  //         setActiveTab1(null);
+  //       }
+  //     };
+  //     // Attach the event listener to the document body
+  //     document.body.addEventListener('mousedown', handleOutsideClick);
+  //     // Clean up the event listener when the component unmounts
+  //     return () => {
+  //       document.body.removeEventListener('mousedown', handleOutsideClick);
+  //     };
+  //   }, [activeTab1]);
+  //    const tabRef = useRef(null);
+  const handleTabClick1 = (tabId1) => {
+    setActiveTab1(tabId1);
+  };
+  const [currentMonthLeft, setCurrentMonthLeft] = useState(10); // November
+  const [currentMonthRight, setCurrentMonthRight] = useState(11); // December
+  const [currentYear, setCurrentYear] = useState(2021);
+  const [selectedDates, setSelectedDates] = useState({
+    checkIn: null,
+    checkOut: null,
+  });
+  const months = [
+    'January', 'February', 'March', 'April', 'May', 'June',
+    'July', 'August', 'September', 'October', 'November', 'December'
+  ];
+  const generateCalendar = (month, year, calendarContainerId) => {
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const calendarContainer = document.getElementById(calendarContainerId);
+    calendarContainer.innerHTML = "";
+    for (let day = 1; day <= daysInMonth; day++) {
+      const li = document.createElement("li");
+      const div = document.createElement("div");
+      div.classList.add("text-box");
+      div.innerHTML = `<span className="days">${day}</span>`;
+      div.addEventListener("click", () => handleDayClick(month, day, div));
+      li.appendChild(div);
+      const currentDate = new Date(year, month, day);
+      if (selectedDates.checkIn && currentDate.getTime() === selectedDates.checkIn.getTime()) {
+        div.classList.add("active");
+      } else if (selectedDates.checkOut && currentDate.getTime() === selectedDates.checkOut.getTime()) {
+        div.classList.add("active");
+      } else if (selectedDates.checkIn && !selectedDates.checkOut && currentDate.getTime() === selectedDates.checkIn.getTime()) {
+        div.classList.add("active");
+      }
+      calendarContainer.appendChild(li);
+    }
+  }
+  const handleDayClick = (month, day, clickedElement) => {
+    const allTextBoxes = document.querySelectorAll('.text-box');
+    allTextBoxes.forEach(box => box.classList.remove('active'));
+    clickedElement.classList.add('active');
+    const currentDate = new Date(currentYear, month, day);
+    if (!selectedDates.checkIn) {
+      setSelectedDates({ checkIn: currentDate, checkOut: null });
+    } else if (!selectedDates.checkOut) {
+      setSelectedDates(prevDates => {
+        if (currentDate > prevDates.checkIn) {
+          return { ...prevDates, checkOut: currentDate };
+        } else {
+          return { checkIn: currentDate, checkOut: prevDates.checkIn };
+        }
+      });
+    } else {
+      setSelectedDates({ checkIn: currentDate, checkOut: null });
+    }
+    updateSelectedDatesInput();
+    updateCalendar();
+  }
+  const updateSelectedDatesInput = () => {
+    const selectedDateInput = document.getElementById("selected-date-input");
+    if (selectedDates.checkIn && selectedDates.checkOut) {
+      selectedDateInput.value = `${formatDate(selectedDates.checkIn)} - ${formatDate(selectedDates.checkOut)}`;
+    } else if (selectedDates.checkIn) {
+      selectedDateInput.value = `${formatDate(selectedDates.checkIn)}`;
+    } else {
+      selectedDateInput.value = "Add dates";
+    }
+  }
+  const formatDate = (date) => {
+    return `${months[date.getMonth()]} ${date.getDate()}, ${date.getFullYear()}`;
+  }
+  const previousMonth = () => {
+    setCurrentMonthLeft(prevMonth => prevMonth - 1);
+    setCurrentMonthRight(prevMonth => prevMonth - 1);
+    if (currentMonthLeft < 0) {
+      setCurrentMonthLeft(11);
+      setCurrentYear(prevYear => prevYear - 1);
+    }
+    if (currentMonthRight < 0) {
+      setCurrentMonthRight(11);
+    }
+    updateCalendar();
+  }
+  const nextMonth = () => {
+    setCurrentMonthLeft(prevMonth => prevMonth + 1);
+    setCurrentMonthRight(prevMonth => prevMonth + 1);
+    if (currentMonthLeft > 11) {
+      setCurrentMonthLeft(0);
+      setCurrentYear(prevYear => prevYear + 1);
+    }
+    if (currentMonthRight > 11) {
+      setCurrentMonthRight(0);
+    }
+    updateCalendar();
+  }
+  const updateCalendar = () => {
+    const monthYearLeftElement = document.getElementById("month-year-left");
+    const monthYearRightElement = document.getElementById("month-year-right");
+    monthYearLeftElement.textContent = `${months[currentMonthLeft]} ${currentYear}`;
+    monthYearRightElement.textContent = `${months[currentMonthRight]} ${currentYear}`;
+    generateCalendar(currentMonthLeft, currentYear, "left-calendar");
+    generateCalendar(currentMonthRight, currentYear, "right-calendar");
+  }
+  const [adults, setAdults] = useState(0);
+  const [children, setChildren] = useState(0);
+  const [olderPeople, setOlderPeople] = useState(0);
+  const handleIncrement = (category) => {
+    switch (category) {
+      case 'adults':
+        setAdults(adults + 1);
+        break;
+      case 'children':
+        setChildren(children + 1);
+        break;
+      case 'olderPeople':
+        setOlderPeople(olderPeople + 1);
+        break;
+      default:
+        break;
+    }
+  };
+  const handleDecrement = (category) => {
+    switch (category) {
+      case 'adults':
+        setAdults(adults > 0 ? adults - 1 : 0);
+        break;
+      case 'children':
+        setChildren(children > 0 ? children - 1 : 0);
+        break;
+      case 'olderPeople':
+        setOlderPeople(olderPeople > 0 ? olderPeople - 1 : 0);
+        break;
+      default:
+        break;
+    }
+  };
+  const handleScroll = () => {
+    const scrollPosition = window.scrollY;
+    const triggerHeight = window.innerHeight * 0.25; // Adjust as needed
+    setShowHeader001(scrollPosition < triggerHeight);
+  };
+  useEffect(() => {
+    // Add scroll event listener when the component mounts
+    window.addEventListener('scroll', handleScroll);
+    // Remove scroll event listener when the component unmounts
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+    };
+  }, []);
+  // onst [activeHeader, setActiveHeader] = useState('header-001');
+  // Ref to store a reference to the header-002 element
+  const [showHeader001, setShowHeader001] = useState(true);
+  const [shoheaderBottom, setshoheaderBottom] = useState(null);
+  const header001Ref = useRef(null);
+  const header002Ref = useRef(null);
+  // useEffect(() => {
+  //   const handleClickOutside = (event) => {
+  //     console.log('Click event:', event);
+  //     if (header001Ref.current && !header001Ref.current.contains(event.target) && (header002Ref.current && !header002Ref.current.contains(event.target))) {
+  //       console.log('Clicked outside header-001 ')
+  //       setActiveTab1(null)
+  //     } else {
+  //       console.log('Clicked outside header-002222')
+  //       setshoheaderBottom(false);
+  //     }
+  //     // if(event.target== "section.main_listing.mt-2.data_set"){
+  //     //   setActiveTab1(null)
+  //     // }
+  //   };
+  //   // Attach the click event listener to the document
+  //   document.addEventListener('click', handleClickOutside);
+  //   // Cleanup the event listener on component unmount
+  //   return () => {
+  //     document.removeEventListener('click', handleClickOutside);
+  //   };
+  // }, [header001Ref, header002Ref]);
+  const [menu, setmenu] = useState(false)
+  const menubarSet = () => {
+    setmenu(!menu)
+  }
+  // const header002Ref1 = useRef(null);
+  const [activeHeader, setActiveHeader] = useState('header-001');
+  // const handleHeaderToggle = () => {
+  //   setActiveHeader(activeHeader === 'header-001' ? 'header-002' : 'header-001');
+  //   setActiveHeader11(true)
+  //   // Assuming you have a reference to the main_listing element
+  //   const mainListingElement = document.querySelector('.main_listing');
+  //   // Check if mainListingElement exists before manipulating its classList
+  //   if (mainListingElement) {
+  //     // Add or remove 'active' className based on the current state
+  //     if (activeHeader === 'header-001') {
+  //       mainListingElement.classList.remove('active');
+  //     } else {
+  //       mainListingElement.classList.add('active');
+  //     }
+  //   }
+  // };
+  const [listin, setListing] = useState(true)
+  const [adjustTime, setAdjustTime] = useState(false);
+  const total = () => {
+    setAdjustTime(!adjustTime)
+  }
+  const [adjustTime1, setAdjustTime1] = useState(false);
+  const total1 = () => {
+    setAdjustTime1(!adjustTime1)
+  }
+  const [adjustTime2, setAdjustTime2] = useState(false);
+  const total2 = () => {
+    setAdjustTime2(!adjustTime2)
+  }
+  // useEffect(() => {
+  //   console.log(props);
+  //   const handleClickOutside = (event) => {
+  //     if (
+  //       header001Ref.current &&
+  //       !header001Ref.current.contains(event.target) &&
+  //       header002Ref.current &&
+  //       !header002Ref.current.contains(event.target)
+  //     ) {
+  //       console.log('Clicked outside both headers');
+  //       // Your logic for handling click outside both headers
+  //     }
+  //   };
+  //   // Attach the click event listener to the document
+  //   document.addEventListener('click', handleClickOutside);
+  //   // Cleanup the event listener on component unmount
+  //   return () => {
+  //     document.removeEventListener('click', handleClickOutside);
+  //   };
+  // }, []);
+  // modale logic
+  const [modalOpen, setModalOpen] = useState(false)
+  const [info, setInfo] = useState({})
+  const [step, setStep] = useState(4);
+  const handleModalOpen = () => setModalOpen(true);
+  const handleModalClose = () => { setModalOpen(false); setStep(1) }
+  const handleNextStep = (newData) => {
+    console.log(newData)
+    setStep(step + newData);
+  }
+  const handledata = (data) => {
+    // console.log(data)
+    setInfo(data)
+  }
+  const handleLogout = ()=>{
+    sessionStorage.clear();
+  }
+  const headerRef = useRef(null);
+  const [isHidden, setIsHidden] = useOutsideClick(headerRef, false);
+  const handleClick = () => {
+      setIsHidden(!isHidden);
+  };
+  return (
+    <>
+      {props.activeHeader === 'header-001' && (
+        <header
+          id="header-001"
+          className={`site-header ${props.addclssList ? 'addclssList' : ''} ${props.listin ? 'header-list' : ''} ${showHeader001 ? 'visible' : 'hidden'}`}
+          ref={header001Ref}
+        >
+          <div className={` ${props.containerFluid ? props.containerFluid : "container"}`}>
+            <div className="top-header">
+              <div className="site-logo">
+                <a href="/"><img src={require("../assets/img/lo_g.png")} alt="" /></a>
+                <div className="mobile-search">
+                  <input type="search" value="Anywhere...." />
+                </div>
+              </div>
+              <div className="small-scrol-search">
+                <div className="top-search top-search-one" id="background-chng">
+                  <div className="boxs show-search">
+                    <div className="borders">
+                      <div className="labels" onClick={props.handleHeaderToggle}>
+                        Where
+                      </div>
+                    </div>
+                  </div>
+                  <div className="boxs">
+                    <div className="borders">
+                      <div className="labels" >
+                        When
+                      </div>
+                    </div>
+                  </div>
+                  <div className="boxs">
+                    <div className="labels last">
+                      Add guests
+                    </div>
+                    <div className="icons">
+                      <span className="img-box">
+                        <img src={require("../assets/img/search-icon.png")} alt="" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="site-navgection">
+                <div className="toggel-menu" id="show-fliters">
+                  <img src={require("../assets/img/filter-icon.png")} alt="" />
+                </div>
+                <div className="site-menu" id="site-menu" >
+                  <ul>
+                    <li><a href="#" id="show-srch-first">Training</a></li>
+                    <li><a href="#" id="show-srch-two">Gym</a></li>
+                    <li><a href="#">Experiences</a></li>
+                  </ul>
+                </div>
+                {
+                  props.expInner ? <div className="top-search top-search-two justify-content-between px-2">
+                    <div className='newcon ps-3'>
+                      <p>Start your search</p>
+                    </div>
+                    <div className="icons">
+                      <span className="img-box new-icon">
+                        <img src={require("../assets/img/search-icon.png")} alt="" />
+                      </span>
+                    </div>
+                  </div> :
+                    <div className="top-search top-search-two">
+                      <div className="boxs show-search" onClick={props.handleHeaderToggle}>
+                        <div className="borders">
+                          <div className="labels">
+                            Where
+                          </div>
+                        </div>
+                      </div>
+                      <div className="boxs">
+                        <div className="borders">
+                          <div className="labels" onClick={props.handleHeaderToggle}>
+                            When
+                          </div>
+                        </div>
+                      </div>
+                      <div className="boxs">
+                        <div className="labels last" onClick={props.handleHeaderToggle}>
+                          Add guests
+                        </div>
+                        <div className="icons">
+                          <span className="img-box">
+                            <img src={require("../assets/img/search-icon.png")} alt="" />
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                }
+              </div>
+              <div className="site-login-btn">
+                <ul>
+                  <li>
+                    <div className="defoult-btn">
+                      <a href="#" className="btn">List your service</a>
+                    </div>
+                  </li>
+                  <li>
+                    <div className="defoult-btn">
+                      <a href="#" className="btns"><img src={require("../assets/img/internet.png")} alt="" /></a>
+                    </div>
+                  </li>
+                  <li>
+                    <div className="menu-btn" ref={headerRef} >
+                      <button onClick={handleClick} id="login-show"><img src={require("../assets/img/menu.png")} alt=""
+                        style={{ width: "16px", height: "16px" }}
+                      />
+                        <div className="img-box"><img src={require("../assets/img/logo-one.png")} alt="" /></div>
+                      </button>
+                      {isHidden ?
+                        <div className="main-sub-menu">
+                          <div className="sub-menu active" id="sub-menus">
+                            <div className="sub-menu-content">
+                              <ul>
+                                {/* {true ? */}
+                                 {sessionStorage.getItem('user_authenticated') ?
+                                  <>
+                                    {/* <li onClick={()=>navigate("/host/profile")}><Link to="/host/profile">Profile</Link></li> */}
+                                    <li onClick={()=>navigate("/host/profile")}>Profile</li>
+                                    <li><Link to={"/host/message"}>Message</Link></li>
+                                    <li><Link to={"/host/notification"}>Notification</Link></li>
+                                    <li><Link to={"/host/booking"}>Booking</Link></li>
+                                    <hr />
+                                    <li><Link to={"/host/wishlist"}>Wishlist</Link></li>
+                                    <li><Link to={"/host/refreal"}>Refreal</Link></li>
+                                    <li><Link to={"/host/account"}>Account</Link></li>
+                                    <hr />
+                                    <li><Link to={"/host/giftcard"}>Gift card</Link></li>
+                                    <li><Link to={"/host/reward"}>Reward</Link></li>
+                                    <li style={{cursor:"pointer"}} onClick={handleLogout}>Logout</li>
+                                  </> :
+                                  <>
+                                    <li onClick={handleModalOpen}>Login</li>
+                                    <li onClick={handleModalOpen}>Sign up</li>
+                                    <hr />
+                                    <li><Link to={"randomSearch"}>List your service</Link></li>
+                                    <li><Link to={"Help"}>Help centre</Link></li>
+                                  </>
+                                }
+                              </ul>
+                            </div>
+                          </div>
+                        </div> : null}
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div className="search-item hide-srch" id='newId1'>
+              <div className="search-bar search-one">
+                <div className="lb">
+                  <div className="left-border">
+                    <div>Where</div><br />
+                    <input type="text" value="Type....." />
+                  </div>
+                </div>
+                <div className="lb">
+                  <div className="left-border">
+                    <div className="change-text">Date</div><br />
+                    <input type="text" value="Add dates" />
+                  </div>
+                </div>
+                <div className="lb other-text">
+                  <div className="left-border">
+                    <div className="">Time</div><br />
+                    <input type="text" value="Add Schedule" />
+                  </div>
+                </div>
+                <div className="lb">
+                  <div>Guest</div><br />
+                  <input type="text" value="Add guests" />
+                  <button><img src={require("../assets/img/search-icon.png")} alt="" style={{ width: "14px", height: "14px" }} /></button>
+                </div>
+              </div>
+            </div>
+            <div className="search-item show-srch">
+              <div className="search-bar serch-two">
+                <div className="lb">
+                  <div className="left-border">
+                    <div>Where</div><br />
+                    <input type="text" value="Type....." />
+                  </div>
+                </div>
+                <div className="lb">
+                  <div className="left-border">
+                    <div className="change-text">Date</div><br />
+                    <input type="text" value="Add dates" />
+                  </div>
+                </div>
+                <div className="lb">
+                  <div>Guest</div><br />
+                  <input type="text" value="Add guests" />
+                  <button><img src={require("../assets/img/search-icon.png")} alt="" style={{ width: "14px", height: "14px" }} /></button>
+                </div>
+              </div>
+            </div>
+          </div>
+        </header>
+      )}
+      {props.activeHeader === 'header-002' && (
+        <div
+          className={`site-header ${showHeader001 ? 'hidden' : 'visible'} ${shoheaderBottom ? 'hidethis' : 'showHidden'}`}
+          id="header-002"
+          ref={header002Ref}
+        //  ref={header002Ref}
+        >
+          <div className="container">
+            <div className="top-header">
+              <div className="site-logo">
+                <a href="#"><img src={require("../assets/img/site-logo.png")} alt="" /></a>
+                <div className="mobile-search">
+                  <input type="search" value="Anywhere...." />
+                </div>
+              </div>
+              <div className="site-navgection">
+                <div className="toggel-menu" id="show-fliters">
+                  <img src={require("../assets/img/filter-icon.png")} alt="" />
+                </div>
+                <div className="site-menu" id="site-menu11">
+                  <ul>
+                    <li>
+                      <a href="#" id="show-srch-first" className={activeTab === 'show-srch-first' ? 'active' : ''} onClick={() => handleTabClick('show-srch-first')}>
+                        Training
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" id="show-srch-two" className={activeTab === 'show-srch-two' ? 'active' : ''} onClick={() => handleTabClick('show-srch-two')}>
+                        Gym
+                      </a>
+                    </li>
+                    <li>
+                      <a href="#" className={activeTab === 'experiences' ? 'active' : ''} onClick={() => handleTabClick('experiences')}>
+                        Experiences
+                      </a>
+                    </li>
+                  </ul>
+                </div>
+                <div className="small-scrol-search" id="small-002">
+                  <div className="top-search top-search-one">
+                    <div className="boxs show-search">
+                      <div className="borders">
+                        <div className="labels">
+                          Where
+                        </div>
+                      </div>
+                    </div>
+                    <div className="boxs">
+                      <div className="borders">
+                        <div className="labels">
+                          When
+                        </div>
+                      </div>
+                    </div>
+                    <div className="boxs">
+                      <div className="labels last">
+                        Add guests
+                      </div>
+                      <div className="icons">
+                        <span className="img-box">
+                          <img src={require("../assets/img/search-icon.png")} alt="" />
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div className="site-login-btn">
+                <ul>
+                  <li>
+                    <div className="defoult-btn">
+                      <a href="#" className="btn">List your service</a>
+                    </div>
+                  </li>
+                  <li>
+                    <div className="defoult-btn">
+                      <a href="#" className="btns"><img src={require("../assets/img/internet.png")} alt="" /></a>
+                    </div>
+                  </li>
+                  <li>
+                    <div className="menu-btn">
+                      <button id="login-show"><img src={require("../assets/img/menu.png")} alt=""
+                        style={{ width: "16px", height: "16px" }} />
+                        <div className="img-box"><img src={require("../assets/img/Frame.png")} alt="" /> </div>
+                      </button>
+                      {menu ?
+                        <div className="main-sub-menu ">
+                          <div className="sub-menu active" id="sub-menus">
+                            <div className="sub-menu-content">
+                              <ul>
+                                <li><a href="#">Profile</a></li>
+                                <li><a href="#">Message</a></li>
+                                <li><a href="#">Notification</a></li>
+                                <li><a href="#">Booking</a></li>
+                                <li><a href="#">Account</a></li>
+                                <li><a href="#">Listing Editor</a></li>
+                                <hr />
+                                <li><a href="#">Refer a gym or expert</a></li>
+                                <li><a href="#">Help centre</a></li>
+                                <li><a href="#">Community</a></li>
+                                <li><a href="#">Logout</a></li>
+                              </ul>
+                            </div>
+                          </div>
+                        </div> : null}
+                    </div>
+                  </li>
+                </ul>
+              </div>
+            </div>
+            <div className="search-item hide-srch">
+              <div className="search-bar search-one active">
+                <div className={`lb ${activeTab1 === 'one-map' ? 'active-bg' : ''}`} id="one-map" onClick={() => handleTabClick1('one-map')}>
+                  <div className="left-border">
+                    <div id="ch-001">Where</div><br />
+                    <div id="ch-002" style={{ display: "none" }}>Location</div><br />
+                    <input type="text" value="Type....." id="input-001" />
+                    <input type="text" value="Where are you going?" style={{ display: "none" }} id="input-002" />
+                  </div>
+                </div>
+                <div className={`lb ${activeTab1 === 'two-map' ? 'active-bg' : ''}`} id="two-map" onClick={() => handleTabClick1('two-map')}>
+                  <div className="left-border">
+                    <div className="change-text">Date</div><br />
+                    <input type="text" id="selected-date-input" value="Add dates" />
+                  </div>
+                </div>
+                <div className={`lb other-text ${activeTab1 === 'three-map' ? 'active-bg' : ''}`} id="three-map" onClick={() => handleTabClick1('three-map')}>
+                  <div className="left-border">
+                    <div className="">Time</div><br />
+                    <input type="text" value="Add Schedule" />
+                  </div>
+                </div>
+                <div className={`lb other-text ${activeTab1 === 'four-map' ? 'active-bg' : ''}`} id="four-map" onClick={() => handleTabClick1('four-map')}>
+                  <div>Guest</div><br />
+                  <input type="text" value="Add guests" />
+                  <button className="Searcy_button" id="newSeach"><img src={require("../assets/img/search-icon.png")} alt="" style={{ width: "13px", height: "13px" }} /> </button>
+                  <button className="Searcy_button_22" id="newSeach1"><img src={require("../assets/img/search-icon.png")} alt="" style={{ width: "13px", height: "13px" }} /> <span className="ps-1"> Search</span></button>
+                </div>
+              </div>
+              {activeTab1 === 'one-map' &&
+                <div className="locetion-box">
+                  <div className="content-box" id="map-show-hide">
+                    <div className="row">
+                      <div className="col-md-5 left-side">
+                        <h5>Recent searches</h5>
+                        <div className="list">
+                          <ul>
+                            <li>
+                              <div className="img-box">
+                                <i className="fa-solid fa-location-dot"></i>
+                              </div>
+                              <div className="text-boxs">
+                                <span>South Africa</span>
+                                <span>Any week</span>
+                              </div>
+                            </li>
+                            <li>
+                              <div className="img-box">
+                                <i className="fa-solid fa-location-dot"></i>
+                              </div>
+                              <div className="text-boxs">
+                                <span>Mouille Point</span>
+                                <span>Jan 11-21</span>
+                              </div>
+                            </li>
+                            <li>
+                              <div className="img-box">
+                                <i className="fa-solid fa-location-dot"></i>
+                              </div>
+                              <div className="text-boxs">
+                                <span>Sea Point </span>
+                                <span>Jan 10-20</span>
+                              </div>
+                            </li>
+                            <li>
+                              <div className="img-box">
+                                <i className="fa-solid fa-location-dot"></i>
+                              </div>
+                              <div className="text-boxs">
+                                <span>South Africa </span>
+                                <span>Dec 23-26</span>
+                              </div>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="col-md-7 right-side">
+                        <div className="img-box">
+                          <img src={require("../assets/img/loction-map-img.png")} alt="" />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              }
+              {activeTab1 === 'two-map' &&
+                <>
+                  <CalendarComponentTwo adjustisMenuActive={adjustC} />
+                </>
+              }
+              {activeTab1 === 'three-map' &&
+                <div className="time-box" id="time-hide-show">
+                  <div className="content-box">
+                    <div className="row">
+                      <div className="col-md-4 left-side">
+                        <h5>Session Duration</h5>
+                        <div className="list">
+                          <ul>
+                            <li>
+                              <button>30 minutes Session</button>
+                            </li>
+                            <li>
+                              <button>60 minutes Session</button>
+                            </li>
+                            <li>
+                              <button>90 minutes Session</button>
+                            </li>
+                            <li>
+                              <button>120 minutes Session</button>
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                      <div className="col-md-8 right-side">
+                        <h5>Slots . <span>10 Nov - 09 Dec, 2023 </span></h5>
+                        <div className="list list-002">
+                          <p>Morning</p>
+                          <ul>
+                            <li>
+                              <div>
+                                <button>05:00 am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>05:30 am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>06:00am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>06:30am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>07:00 am</button>
+                              </div>
+                            </li>
+                            {adjustTime && (
+                              <>
+                                <li>
+                                  <div>
+                                    <button>07:30 am</button>
+                                  </div>
+                                </li>
+                                <li>
+                                  <div>
+                                    <button>08:00 am</button>
+                                  </div>
+                                </li>
+                              </>
+                            )}
+                            {/* <li> */}
+                            <div className="adjusting_arrow">
+                              <button onClick={total} className="arrow"><img src={require("../assets/img/arrow.png")} alt="" className={adjustTime ? "rotateIC" : ""} /></button>
+                            </div>
+                          </ul>
+                        </div>
+                        <div className="list list-002">
+                          <p>Morning</p>
+                          <ul>
+                            <li>
+                              <div>
+                                <button>05:00 am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>05:30 am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>06:00am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>06:30am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>07:00 am</button>
+                              </div>
+                            </li>
+                            {adjustTime1 && (
+                              <>
+                                <li>
+                                  <div>
+                                    <button>07:30 am</button>
+                                  </div>
+                                </li>
+                                <li>
+                                  <div>
+                                    <button>08:00 am</button>
+                                  </div>
+                                </li>
+                              </>
+                            )}
+                            {/* <li> */}
+                            <div className="adjusting_arrow">
+                              <button onClick={total1} className="arrow"><img src={require("../assets/img/arrow.png")} alt="" className={adjustTime1 ? "rotateIC" : ""} /></button>
+                            </div>
+                          </ul>
+                        </div>
+                        <div className="list ">
+                          <p>Morning</p>
+                          <ul>
+                            <li>
+                              <div>
+                                <button>05:00 am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>05:30 am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>06:00am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>06:30am</button>
+                              </div>
+                            </li>
+                            <li>
+                              <div>
+                                <button>07:00 am</button>
+                              </div>
+                            </li>
+                            {adjustTime2 && (
+                              <>
+                                <li>
+                                  <div>
+                                    <button>07:30 am</button>
+                                  </div>
+                                </li>
+                                <li>
+                                  <div>
+                                    <button>08:00 am</button>
+                                  </div>
+                                </li>
+                              </>
+                            )}
+                            {/* <li> */}
+                            <div className="adjusting_arrow">
+                              <button onClick={total2} className="arrow"><img src={require("../assets/img/arrow.png")} alt="" className={adjustTime2 ? "rotateIC" : ""} /></button>
+                            </div>
+                          </ul>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>}
+              {activeTab1 === 'four-map' &&
+                <div className="addgust-box" id="addgust-hide-show">
+                  <div className="content-box">
+                    <div className="inner-content">
+                      <ul>
+                        <li>
+                          <div className="text-004">
+                            <h6>Adults</h6>
+                            <span>Ages 13 or above</span>
+                          </div>
+                          <div className="function-items">
+                            <div className="quantity">
+                              <a href="#" className="quantity__minus" onClick={() => handleDecrement('adults')}><span>-</span></a>
+                              <input name="quantity" type="text" className="quantity__input" value={adults} readOnly />
+                              <a href="#" className="quantity__plus" onClick={() => handleIncrement('adults')}><span>+</span></a>
+                            </div>
+                          </div>
+                        </li>
+                        <hr />
+                        <li>
+                          <div className="text-004">
+                            <h6>Children</h6>
+                            <span>Ages 2-12</span>
+                          </div>
+                          <div className="function-items">
+                            <div className="quantity">
+                              <a href="#" className="quantity__minus" onClick={() => handleDecrement('children')}><span>-</span></a>
+                              <input name="quantity" type="text" className="quantity__input" value={children} readOnly />
+                              <a href="#" className="quantity__plus" onClick={() => handleIncrement('children')}><span>+</span></a>
+                            </div>
+                          </div>
+                        </li>
+                        <hr />
+                        <li>
+                          <div className="text-004">
+                            <h6>Older people & Disabled</h6>
+                            {/* <span>Ages 13 or above</span> */}
+                          </div>
+                          <div className="function-items">
+                            <div className="quantity">
+                              <a href="#" className="quantity__minus" onClick={() => handleDecrement('olderPeople')}><span>-</span></a>
+                              <input name="quantity" type="text" className="quantity__input" value={olderPeople} readOnly />
+                              <a href="#" className="quantity__plus" onClick={() => handleIncrement('olderPeople')}><span>+</span></a>
+                            </div>
+                          </div>
+                        </li>
+                      </ul>
+                    </div>
+                  </div>
+                </div>}
+            </div>
+            <div className=" Mobile-navbar">
+        <a href="#explore">
+          <img src="explore-icon.png" alt="Explore" />
+          <span>Explore</span>
+        </a>
+        <a href="#wishlists">
+          <img src="wishlists-icon.png" alt="Wishlists" />
+          <span>Wishlists</span>
+        </a>
+        <a href="#trips">
+          <img src="trips-icon.png" alt="Trips" />
+          <span>Trips</span>
+        </a>
+        <a href="#messages">
+          <img src="messages-icon.png" alt="Messages" />
+          <span>Messages</span>
+        </a>
+        <a href="#profile">
+          <img src="profile-icon.png" alt="Profile" />
+          <span>Profile</span>
+        </a>
+      </div>
+            {/* <div className="search-item show-srch">
+              <div className="search-bar serch-two">
+                <div className="lb">
+                  <div className="left-border">
+                    <div>Where</div><br />
+                    <input type="text" value="Type....." />
+                  </div>
+                </div>
+                <div className="lb">
+                  <div className="left-border">
+                    <div className="change-text">Date</div><br />
+                    <input type="text" id="selected-date-input" value="Add dates" />
+                  </div>
+                </div>
+                <div className="lb">
+                  <div>Guest</div><br />
+                  <input type="text" value="Add guests" />
+                  <button><img src={require("../assets/img/search-icon.png")} alt="" style={{ height: "14px", width: "14px" }} /> </button>
+                </div>
+              </div>
+            </div> */}
+          </div>
+        </div>
+      )}
+      {/*login model */}
+      <Modal
+        open={modalOpen}
+        onClose={handleModalClose}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Box sx={style}>
+          {step === 1 && <Login onNext={handleNextStep} onClose={handleModalClose} data={handledata} />}
+          {step === 2 && <OtpVerification onNext={handleNextStep} data={info} onClose={handleModalClose} />}
+          {step === 3 && <UserDetails OnNext={handleNextStep} data={info} onClose={handleModalClose} />}
+          {step === 4 && <Commitment OnNext={handleNextStep} />}
+          {step === 5 && <Welcome OnNext={handleNextStep} />}
+          {step === 6 && <AddPhoto OnNext={handleNextStep} />}
+          {/* {step === 7 && <Intrest OnNext={handleNextStep} />} */}
+          {step === 7 && <About OnNext={handleNextStep} />}
+        </Box>
+      </Modal>
+    </>
+  );
+};
+export default SiteHeader;
